@@ -17,6 +17,7 @@ video_name_list = glob.glob("D:/workspace-dataset/DALY/download_videos/videos/*.
 parser = ap.ArgumentParser()
 parser.add_argument('-n', "--videoNumber", help="Number of Video")
 parser.add_argument('-r', "--randomVideo", help="Random Video")
+parser.add_argument('-s', "--saveVideo", help="Save Video")
 
 args = vars(parser.parse_args())
 
@@ -27,8 +28,6 @@ else:
 
 if args["randomVideo"] is not None:
     video_number = random.randrange(0, len(video_name_list))
-else:
-    video_number = 0
 
 video_id_list = []
 
@@ -63,8 +62,8 @@ for i in range(0, len(action)):
     action_frame_list.append([int(action[i]['beginTime'] * fps), int(action[i]['endTime'] * fps)])
 print(action_frame_list)
 
-if action_frame_list[0][0] > 500:
-    start_frame = action_frame_list[0][0] - 300
+if action_frame_list[0][0] > 200:
+    start_frame = action_frame_list[0][0] - 100
 else:
     start_frame = 0
 
@@ -74,25 +73,41 @@ frame_number = start_frame
 
 font = cv2.FONT_HERSHEY_SIMPLEX
 
+#### save video
+if args["saveVideo"] is not None:
+    fourcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')
+    output_video_name = video_id.split('.')[0] + '_output.avi'
+    out = cv2.VideoWriter(output_video_name, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), fps, (int(cap.get(3)), int(cap.get(4))))
+
 while(cap.isOpened()):
     frame_number = frame_number + 1
     print(str(frame_number))
 
     ret, frame = cap.read()
 
-    for j in range(0, len(action)):
-        if frame_number >= action_frame_list[j][0] and frame_number <= action_frame_list[j][1]:
-            print('YEAH!')
-            xmin = action[j]['keyframes'][0]['boundingBox'][0][0]
-            ymin = action[j]['keyframes'][0]['boundingBox'][0][1]
-            xmax = action[j]['keyframes'][0]['boundingBox'][0][2]
-            ymax = action[j]['keyframes'][0]['boundingBox'][0][3]
-            frame = cv2.rectangle(frame, (int(width * xmin), int(height * ymin)), (int(width * xmax), int(height * ymax)), (255,0,0), 5)
-            cv2.putText(frame, action_list[0], (int(width * xmin) + 10, int(height * ymin) + 30), font, 1, (255,0,0), 3, cv2.LINE_AA)
+    if ret == True:
+        for j in range(0, len(action)):
+            if frame_number >= action_frame_list[j][0] and frame_number <= action_frame_list[j][1]:
+                print('YEAH!')
+                xmin = action[j]['keyframes'][0]['boundingBox'][0][0]
+                ymin = action[j]['keyframes'][0]['boundingBox'][0][1]
+                xmax = action[j]['keyframes'][0]['boundingBox'][0][2]
+                ymax = action[j]['keyframes'][0]['boundingBox'][0][3]
+                frame = cv2.rectangle(frame, (int(width * xmin), int(height * ymin)), (int(width * xmax), int(height * ymax)), (255,0,0), 5)
+                cv2.putText(frame, action_list[0], (int(width * xmin) + 10, int(height * ymin) + 30), font, 1, (255,0,0), 3, cv2.LINE_AA)
 
-    cv2.imshow('frame', frame)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
+        if args["saveVideo"] is not None:
+            out.write(frame)
+
+        cv2.imshow('frame', frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+    else:
         break
 
 cap.release()
+
+if args["saveVideo"] is not None:
+    out.release()
+
 cv2.destroyAllWindows()
